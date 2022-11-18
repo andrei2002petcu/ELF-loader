@@ -7,6 +7,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <signal.h>
+#include <unistd.h>
 
 #include "exec_parser.h"
 
@@ -14,6 +16,20 @@ static so_exec_t *exec;
 
 static void segv_handler(int signum, siginfo_t *info, void *context)
 {
+	for(int i = 0; i < exec->segments_no; i++) {
+		so_seg_t *segment = exec->segments + i * sizeof(so_seg_t);
+		int address = info->si_addr;
+		if(address >= segment->vaddr && 
+			address < (segment->vaddr + segment->file_size)) { //vezi ca ai pus file nu mem
+				int page_addr =  (address - segment->vaddr) / getpagesize();
+				//alocam
+			}
+
+	}
+
+
+		signal(SIGSEGV, SIG_DFL);
+
 	/* TODO - actual loader implementation */
 }
 

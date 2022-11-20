@@ -19,26 +19,28 @@ static so_exec_t *exec;
 
 static void segv_handler(int signum, siginfo_t *info, void *context)
 {
+	//printf("am intrat");
+	//getchar();
 	if(signum != SIGSEGV || info == NULL)
 		signal(SIGSEGV, SIG_DFL);
 	
 	int done = 0;
-	for(int i = 0; i < exec->segments_no; i++) 
+	for(int i = 0; i < exec->segments_no && done == 0; i++) 
 	{
-		so_seg_t *segment = exec->segments + i * sizeof(so_seg_t);
+		so_seg_t *segment = exec->segments + i;
 		
 		if((int)info->si_addr >= segment->vaddr 
 			&& (int)info->si_addr < (segment->vaddr + segment->mem_size)) 
 			{
 				done = 1;
 				int page_index = ((int)info->si_addr - segment->vaddr) / getpagesize();
-				int page_addr = segment->vaddr + page_index * getpagesize();
-				int len = (int)info->si_addr - page_addr;
+				//int page_addr = segment->vaddr + page_index * getpagesize();
+				int page_offset = page_index * getpagesize();
 				
-				// void *ret_mmap = mmap(page_addr, getpagesize(), segment->perm, 
+				// void *ret_mmap = mmap(segment->vaddr + page_offset, getpagesize(), segment->perm, 
 				// 		MAP_FIXED | MAP_PRIVATE, fd, segment->offset + page_index * getpagesize());
 				
-				void *ret_mmap = mmap(page_addr, getpagesize(), segment->perm, 
+				void *ret_mmap = mmap((void *)segment->vaddr + page_offset, getpagesize(), PERM_R | PERM_W, 
 						MAP_FIXED | MAP_PRIVATE | MAP_ANON, -1, 0);
 				
 				if(ret_mmap == MAP_FAILED)
@@ -47,10 +49,20 @@ static void segv_handler(int signum, siginfo_t *info, void *context)
 					return;
 				}
 
-				
+				lseek(fd, segment->offset + page_offset, SEEK_SET);
+				if (page_offset + getpagesize() < segment->file_size)
+					read(fd, ret_mmap, getpagesize());
+				else if(page_offset <= segment->file_size) 
+					{
+					read(fd, ret_mmap, segment->file_size - page_offset);
+					memset((void *)segment->vaddr + segment->file_size, 0, page_offset + getpagesize() - segment->file_size);
+					}
+				else if(page_offset > segment->file_size)
+					memset((void *)segment->vaddr + page_offset, 0, getpagesize());
 
+				mprotect((void *)segment->vaddr + page_offset, getpagesize(), segment->perm);
 
-				printf("map done at %d\n", page_addr);
+				//printf("map done at %d\n", segment->vaddr + page_offset);
 			}
 	}
 	if(done == 0)

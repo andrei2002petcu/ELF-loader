@@ -23,9 +23,11 @@ static void segv_handler(int signum, siginfo_t *info, void *context) {
 		signal(SIGSEGV, SIG_DFL);
 	
 	int done = 0;
+	//iteram prin vectorul de segmente cautand locatia unde s-a produs page fault-ul
 	for(int i = 0; i < exec->segments_no && done == 0; i++) {
 		so_seg_t *segment = exec->segments + i;
 		
+		//se initializeaza un vector care va contine 0/1 la indexul paginii indicand daca pagina este mapata
 		if(segment->data == NULL)
 			segment->data = calloc(segment->mem_size/getpagesize(), sizeof(int));
 		
@@ -35,6 +37,7 @@ static void segv_handler(int signum, siginfo_t *info, void *context) {
 			int page_offset = page_index * getpagesize();
 			int page_addr = segment->vaddr + page_offset;
 			
+			//se efectueaza maparea daca pagina nu a fost anterior deja mapata
 			if(*((int *)(segment->data) + page_index) != 0)
 				signal(SIGSEGV, SIG_DFL);
 
@@ -47,6 +50,7 @@ static void segv_handler(int signum, siginfo_t *info, void *context) {
 			}
 			else *((int *)(segment->data) + page_index) = 1;
 
+			//citirea datelor in memorie in functie de pozitia paginii in segment
 			lseek(fd, segment->offset + page_offset, SEEK_SET);
 			if (page_offset + getpagesize() < segment->file_size)
 				read(fd, ret_mmap, getpagesize());
@@ -66,8 +70,7 @@ static void segv_handler(int signum, siginfo_t *info, void *context) {
 		signal(SIGSEGV, SIG_DFL);
 }
 
-int so_init_loader(void)
-{
+int so_init_loader(void) {
 	int rc;
 	struct sigaction sa;
 
@@ -82,8 +85,7 @@ int so_init_loader(void)
 	return 0;
 }
 
-int so_execute(char *path, char *argv[])
-{
+int so_execute(char *path, char *argv[]) {
 	fd = open(path, O_RDONLY);
 	if (fd == -1)
 		return -1;
@@ -94,5 +96,6 @@ int so_execute(char *path, char *argv[])
 
 	so_start_exec(exec, argv);
 
+	close(fd);
 	return -1;
 }

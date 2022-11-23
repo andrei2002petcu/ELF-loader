@@ -19,8 +19,10 @@ static so_exec_t *exec;
 
 static void segv_handler(int signum, siginfo_t *info, void *context) {
 	
-	if(signum != SIGSEGV || info == NULL)
+	if(signum != SIGSEGV || info == NULL) {
+		perror("Signal not recognized!");
 		signal(SIGSEGV, SIG_DFL);
+	}
 	
 	int done = 0;
 	//iteram prin vectorul de segmente cautand locatia unde s-a produs page fault-ul
@@ -38,15 +40,17 @@ static void segv_handler(int signum, siginfo_t *info, void *context) {
 			int page_addr = segment->vaddr + page_offset;
 			
 			//se efectueaza maparea daca pagina nu a fost anterior deja mapata
-			if(*((int *)(segment->data) + page_index) != 0)
+			if(*((int *)(segment->data) + page_index) != 0) {
+				perror("Page already mapped!");
 				signal(SIGSEGV, SIG_DFL);
+			}
 
 			void *ret_mmap = mmap((void *)page_addr, getpagesize(), PERM_W, 
 					MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 			
 			if(ret_mmap == MAP_FAILED) {
+				perror("Map failed");
 				signal(SIGSEGV, SIG_DFL);
-				exit(1);
 			}
 			else *((int *)(segment->data) + page_index) = 1;
 
@@ -66,8 +70,10 @@ static void segv_handler(int signum, siginfo_t *info, void *context) {
 			mprotect((void *)page_addr, getpagesize(), segment->perm);
 		}
 	}
-	if(done == 0)
+	if(done == 0) {
+		perror("Page not found!");
 		signal(SIGSEGV, SIG_DFL);
+	}
 }
 
 int so_init_loader(void) {
@@ -87,8 +93,10 @@ int so_init_loader(void) {
 
 int so_execute(char *path, char *argv[]) {
 	fd = open(path, O_RDONLY);
-	if (fd == -1)
-		return -1;
+	if (fd < 0) {
+		perror("File open failed!");
+		exit(EXIT_FAILURE);
+	}
 	
 	exec = so_parse_exec(path);
 	if (!exec)

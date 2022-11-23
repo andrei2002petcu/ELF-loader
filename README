@@ -1,0 +1,28 @@
+###############################################################################
+#####################  Tema_1 SO - Loader de Executabile ######################
+###############################################################################
+
+Implementarea handler-ului pentru semnalul SIGSEGV a fost realizata astfel:
+    
+    - se itereaza vectorul de segmente din structura "exec", se aloca si se
+    initializeaza campul "data" al fiecarui segment pentru a retine starea
+    fiecarei pagini (0-unmapped, 1-mapped)
+
+    - gasim segmentul unde se afla adresa erorii ce a produs page fault-ul si
+    calculam pentru pagina: indexul, adresa si offset-ul fata de adresa de 
+    inceput a segmentului
+
+    - maparea paginii se realizeaza doar in cazul in care pagina nu a fost
+    anterior mapata
+
+    - pentru copierea datelor in memorie se va repozitiona file offset-ul la
+    adresa de unde se va face citirea folosing "lseek()". datele se vor muta
+    in memorie tinand cont de pozitia paginii in segment
+
+    - in final se modifica permisiunile pentru pagina mapata, iar in cazul in
+    care maparea a esuat se va apela handler-ul default  
+
+###############################################################################
+Facultatea de Automatica si Calculatoare - Anul 2 2022-2023 - Grupa 322CC
+PETCU Andrei - Sisteme de operare - TEMA 1
+###############################################################################

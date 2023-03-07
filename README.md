@@ -1,4 +1,4 @@
-# Skeleton for building a ELF loader
+# ELF loader
 
 ## Introduction
 This project contains a skeleton for building an
@@ -48,10 +48,7 @@ This should generate the `so_exec` and `so_test_prog` used for the test:
 LD_LIBRARY_PATH=. ./so_exec so_test_prog
 ```
 
-**NOTE:** the skeleton does not have the loader implemented, thus when running
-the command above, your program will crash!
-
 ## Notes
-This skeleton is provided by the Operating System team from the University
+The skeleton is provided by the Operating System team from the University
 Politehnica of Bucharest to their students to help them complete their
 Executable Loader assignment.
